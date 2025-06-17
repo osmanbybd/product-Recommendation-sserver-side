@@ -14,7 +14,7 @@ admin.initializeApp({
 
 const app = express();
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['https://product-manegment.web.app'],
   credentials: true
 }));
 app.use(express.json());
@@ -47,7 +47,7 @@ const client = new MongoClient(uri, {
     try{
       const decoded = await getAuth().verifyIdToken(token);
       req.tokenEmail = decoded.email;
-      console.log(decoded.email)
+      // console.log(decoded.email)
       next()
     }
     catch(error){
@@ -245,10 +245,10 @@ app.post('/add-query', async(req, res) =>{
     })
 
   try {
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.connect();
+
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
