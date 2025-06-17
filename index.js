@@ -2,14 +2,22 @@ const express = require('express');
 const cors = require('cors');
 const port =process.env.PORT || 5000;
 const dotenv = require('dotenv');
-
 dotenv.config();
+const admin = require("firebase-admin");
+var serviceAccount = require(process.env.FIREBASE_KEY);
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { getAuth } = require('firebase-admin/auth');
 const uri = `mongodb+srv://${process.env.PRODUCT_URL}:${process.env.PRODUCT_PASS}@cluster0.t3igz9r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const client = new MongoClient(uri, {
@@ -19,6 +27,29 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+
+  const verifyToken = async(req, res , next) =>{
+    const token = req?.headers?.authorization;
+    if(!token?.startsWith){
+      return res.status(401).send({error : true , message : "Unauthorized Access!"})
+    }
+    
+    try{
+      const decoded = await getAuth().verifyIdToken(token);
+      req.tokenEmail = decoded.email;
+      console.log(decoded)
+      next()
+    }
+    catch(error){
+      return res.status(403).send({error : true , message : "Forbidden Access!"})
+    }
+
+  }
+
+
+
+
 async function run() {
 
 
@@ -46,15 +77,20 @@ app.post('/add-query', async(req, res) =>{
 
 
 
-    app.get('/queries/:id' , async(req, res) =>{
+    app.get('/queries/:id' ,  async(req, res) =>{
       const id = req.params.id;
       const query = {_id : new ObjectId(id)};
       const result = await queryColletions.findOne(query)
       res.send(result)
     })
 
-    app.get('/my-queries/:email' , async(req, res) =>{
+    app.get('/my-queries/:email' , verifyToken, async(req, res) =>{
       const email = req.params.email; 
+      const decodedEmail = req.tokenEmail;
+      if(decodedEmail !== email) {
+         return res.status(403).send({error : true , message : "Forbidden Access!"})
+      }
+
       const query = { userEmail : email}
       const result = await queryColletions.find(query).toArray();
       res.send(result)
@@ -96,20 +132,34 @@ app.post('/add-query', async(req, res) =>{
     })
 
 
-    app.get('/recommendation', async(req, res) => {
+    app.get('/recommendation',verifyToken, async(req, res) => {
+      const email = req.query.email
+      const decodedEmail = req.tokenEmail;
+      if(decodedEmail !== email){
+         return res.status(403).send({error : true , message : "Forbidden Access!"})
+      }
       const  queryId = req.query.queryId;
       const result = await recommendationCollection.find({queryId :queryId}).sort({timestamp: -1}).toArray()
       res.send(result)
     })
 
-    app.get('/my-recommendation' , async(req, res) =>{
+    app.get('/my-recommendation' ,verifyToken,  async(req, res) =>{
       const email = req.query.email;
+      const decodedEmail = req.tokenEmail;
+      if(decodedEmail !== email){
+         return res.status(403).send({error : true , message : "Forbidden Access!"})
+      }
+      
       const recommendationEmail = {recommenderEmail : email};
       const result = await recommendationCollection.find(recommendationEmail).toArray()
       res.send(result)
     })
 
-    app.delete('/myRecommendation/:id' , async(req, res) => {
+    app.delete('/myRecommendation/:id' ,verifyToken,  async(req, res) => {
+      const decodedEmail = req.tokenEmail;
+      if(decodedEmail !== email){
+         return res.status(403).send({error : true , message : "Forbidden Access!"})
+      }
       const id = req.params.id;
       const filter = {_id : new ObjectId(id)}
       const recommendation = await recommendationCollection.findOne(filter)
@@ -129,7 +179,11 @@ app.post('/add-query', async(req, res) =>{
     })
 
 
-    app.get('/recommendationForMe' , async( req , res) =>{
+    app.get('/recommendationForMe' ,verifyToken, async( req , res) =>{
+      const decodedEmail = req.tokenEmail;
+      if(decodedEmail !== email){
+         return res.status(403).send({error : true , message : "Forbidden Access!"})
+      }
       
       const email = req.query.email;
       const userQueries = await queryColletions.find({userEmail :email}).toArray()
