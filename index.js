@@ -14,7 +14,7 @@ admin.initializeApp({
 
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: ['https://auth-itegration-1a783.web.app'],
   credentials: true
 }));
 app.use(express.json());
