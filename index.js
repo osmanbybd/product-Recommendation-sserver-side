@@ -14,7 +14,7 @@ admin.initializeApp({
 
 const app = express();
 app.use(cors({
-  origin: ['https://product-manegment.web.app'],
+  origin: ['http://localhost:5173'],
   credentials: true
 }));
 app.use(express.json());
@@ -64,6 +64,19 @@ async function run() {
 
     const queryColletions = client.db('product_management').collection('queries')
     const recommendationCollection = client.db('product_management').collection('recommendation')
+
+
+
+  // GET /dashboard-stats
+  app.get("/dashboard-stats", verifyToken, async (req, res) => {
+    const userEmail = req.tokenEmail;
+
+    const queries = await queryCollection.countDocuments({ created_by: userEmail });
+    const recommendations = await recommendationCollection.countDocuments({ created_by: userEmail });
+    const received = await recommendationCollection.countDocuments({ recommended_to: userEmail });
+
+    res.send({ queries, recommendations, received });
+  });
 
 
 app.post('/add-query', async(req, res) =>{
