@@ -14,7 +14,7 @@ admin.initializeApp({
 
 const app = express();
 app.use(cors({
-  origin: ['https://auth-itegration-1a783.web.app'],
+  origin:'https://product-manegment.web.app',
   credentials: true
 }));
 app.use(express.json());
@@ -71,7 +71,7 @@ async function run() {
   app.get("/dashboard-stats", verifyToken, async (req, res) => {
     const userEmail = req.tokenEmail;
 
-    const queries = await queryCollection.countDocuments({ created_by: userEmail });
+    const queries = await queryCollections.countDocuments({ created_by: userEmail });
     const recommendations = await recommendationCollection.countDocuments({ created_by: userEmail });
     const received = await recommendationCollection.countDocuments({ recommended_to: userEmail });
 
